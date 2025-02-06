@@ -19,6 +19,7 @@ class CodeNamesGame:
         self.game_words = get_random_words(
             wordlist_path="assets/words.txt", num_words=25
         )
+        self.left_over_words = self.game_words.copy()
         self.start_team = random.choice(["red", "blue"])
         if self.start_team == "red":
             red_words, blue_words = 9, 8
@@ -42,13 +43,14 @@ class CodeNamesGame:
             team = self.red_team
             opponent_color = "blue"
 
-        words, num_cards = team["spymaster"].do_turn_spymaster()
-        print(f"{team_color} Spymaster: {num_cards} words: {', '.join(words)}")
-        guesses = team["guesser"].do_turn_guesser()
-        self.turn_history.append({"spymaster": (words, num_cards), "guesser": guesses})
+        hint, num_cards = team["spymaster"].do_turn_spymaster(self.word_assignments)
+        print(f"{team_color} Spymaster: {num_cards} hint: {hint}")
+        guesses = team["guesser"].do_turn_guesser(hint, num_cards, self.left_over_words)
+        self.turn_history.append({"spymaster": (hint, num_cards), "guesser": guesses})
 
         for guess in guesses:
             print(f"{team_color} guesser: {guess} ...", end=" ")
+            self.left_over_words.remove(guess)
             if guess in self.word_assignments[team_color]:  # Correct guess
                 self.word_assignments[team_color].remove(guess)
                 print("correct!")
@@ -64,6 +66,8 @@ class CodeNamesGame:
                 self.word_assignments["assassin"].remove(guess)
                 print("incorrect! {guess} was the assassin!")
                 break
+            else:
+                print(f"[WARNING] Guesser guessed a word which was not part of the allowed words! Guess: {guess}, allowed words: {str(self.left_over_words)}")
 
         # Current team lost
         if len(self.word_assignments[opponent_color]) == 0:

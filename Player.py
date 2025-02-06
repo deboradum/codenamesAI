@@ -31,34 +31,57 @@ class Player:
         self.team_color = team_color
         self.role = role
 
-        self.sys_prompt = ""
+        self.sys_prompt = """
+        You are playing Codenames. The game consists of two teams: Red Team and Blue Team. Each team has a Spymaster and a Guesser.
+        Spymaster: Knows which words belong to their team, the opposing team, neutral words, and the assassin. Gives a one-word clue and a number indicating how many words are related to the clue. Example: "Ocean 2" means two words relate to "Ocean." Only respond with a single word and a number, separated by a space.
+        Guesser: Tries to guess their team's words based on the clue. If they guess correctly, their team scores. If they guess an opposing team's word, the other team gains a point. If they guess a neutral word or an opponent's word, the turn ends. If they guess the assassin word, their team loses immediately. Respond with the number of words specified by the hint. Respond with the words, seperated by a space. Put the words you are most confident in first. Example: 'water boat'.
+        Teams take turns. The goal is to guess all of your team's words before the opposing team while avoiding the assassin. The game ends when a team finds all their words or someone picks the assassin.
+        """
 
     def do_turn_spymaster(self, word_assignments):
-        result = fal_client.subscribe(
-            "fal-ai/any-llm",
-            arguments={
-                "model": self.model,
-                "system_prompt": self.sys_prompt,
-                "prompt": f"You are the {self.team_color} team's spymaster. Think of a single word clue that allows your team mate guess as many {self.team_color} words as possible. Avoid potential connections with the other remaining words.",
-            },
-        )
-        print(result)
+        correct_format = False
+        num_tries = 0
+        while not correct_format and num_tries < 5:
+            result = fal_client.subscribe(
+                "fal-ai/any-llm",
+                arguments={
+                    "model": self.model,
+                    "system_prompt": self.sys_prompt,
+                    "prompt": f"You are the {self.team_color} team's spymaster. Think of a single word clue that allows your teammate to guess as many {self.team_color} words as possible. Avoid potential connections with the other remaining words. The possible words and their assignments are as follows: {str(word_assignments)}. Only respond with a single word and a number, separated by a space",
+                },
+            )
+            try:
+                hint, num_cards = result["output"].split(" ")
+                correct_format = True
+            except Exception as e:
+                print(
+                    "[WARNING] spymaster did not return the correct format. Got error:",
+                    e,
+                )
+                num_tries += 1
 
-        # TODO: parse result and verify it is a json object.
+        return hint, num_cards
 
-        return result
+    def do_turn_guesser(self, clue_word, num_cards, left_over_words):
+        correct_format = False
+        num_tries = 0
+        while not correct_format and num_tries < 5:
+            result = fal_client.subscribe(
+                "fal-ai/any-llm",
+                arguments={
+                    "model": self.model,
+                    "system_prompt": self.sys_prompt,
+                    "prompt": f"You are the {self.team_color} team's guesser. The received clue word is {clue_word}. You must guess {num_cards} words with this clue. Choose from any of the following words: {str(left_over_words)}. Only respond with a space seperated list of words, with words being in order of which you are most certain of, to least",
+                },
+            )
+            try:
+                guesses = result["output"].split(" ")
+                correct_format = True
+            except Exception as e:
+                print(
+                    "[WARNING] guesser did not return the correct format. Got error:",
+                    e,
+                )
+                num_tries += 1
 
-    def do_turn_guesser(self, clue_word):
-        result = fal_client.subscribe(
-            "fal-ai/any-llm",
-            arguments={
-                "model": self.model,
-                "system_prompt": self.sys_prompt,
-                "prompt": f"You are the {self.team_color} team's guesser. The received clue word is {clue_word}. Return your guesses in a json list, with words being in order of which you are most certain of, to least",
-            },
-        )
-        print(result)
-
-        # TODO: parse result and verify it is a json object.
-
-        return result
+        return guesses
