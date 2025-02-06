@@ -1,6 +1,7 @@
 import os
 import json
 import random
+import argparse
 
 from Game import CodeNamesGame
 from Player import Player, ALLOWED_PLAYERS
@@ -17,7 +18,7 @@ def get_teams(red_team, blue_team):
 
     return red_spymaster, red_guesser, blue_spymaster, blue_guesser
 
-def get_log_path(log_dir="logs"):
+def get_log_path(log_dir="logs/"):
     os.makedirs(log_dir, exist_ok=True)
     game_numbers = [
         int(f[5:]) for f in os.listdir(log_dir) if f.startswith("game_") and f[5:].isdigit()
@@ -26,10 +27,23 @@ def get_log_path(log_dir="logs"):
 
     return os.path.join(log_dir, f"game_{next_number}")
 
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--num_simulations",
+        type=int,
+        default=10,
+        help="Number of simulations to run.",
+    )
+    parser.add_argument(
+        "--log_dir", type=str, default="logs/", help="Directory to save game logs."
+    )
+
+    return parser.parse_args()
+
 
 if __name__ == "__main__":
-    # TODO: get args
-    args = None
+    args = parse_args()
 
     for simulation in range(args.num_simulations):
         red_team, blue_team = random.sample(ALLOWED_PLAYERS, 2)
