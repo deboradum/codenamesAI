@@ -7,14 +7,11 @@ from Game import CodeNamesGame
 from Player import Player, ALLOWED_PLAYERS
 
 def get_teams(red_team, blue_team):
-    red_model, _ = red_team
-    blue_model, _ = blue_team
+    red_spymaster = Player("red", "spymaster", red_team)
+    red_guesser = Player("red", "guesser", red_team)
 
-    red_spymaster = Player("red", "spymaster", red_model)
-    red_guesser = Player("red", "guesser", red_model)
-
-    blue_spymaster = Player("blue", "spymaster", blue_model)
-    blue_guesser = Player("blue", "guesser", blue_model)
+    blue_spymaster = Player("blue", "spymaster", blue_team)
+    blue_guesser = Player("blue", "guesser", blue_team)
 
     return red_spymaster, red_guesser, blue_spymaster, blue_guesser
 

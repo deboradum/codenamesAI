@@ -1,19 +1,19 @@
 import fal_client
 
 ALLOWED_PLAYERS = [
-    ("anthropic/claude-3.5-sonnet, claude-3.5-sonnet"),
-    ("anthropic/claude-3-5-haiku", "claude-3-5-haiku"),
-    ("anthropic/claude-3-haiku", "claude-3-haiku"),
-    ("google/gemini-pro-1.5", "gemini-pro-1.5"),
-    ("google/gemini-flash-1.5", "gemini-flash-1.5"),
-    ("google/gemini-flash-1.5-8b", "gemini-flash-1.5-8b"),
-    ("meta-llama/llama-3.2-1b-instruct", "llama-3.2-1b-instruct"),
-    ("meta-llama/llama-3.2-3b-instruct", "llama-3.2-3b-instruct"),
-    ("meta-llama/llama-3.1-8b-instruct", "llama-3.1-8b-instruct"),
-    ("meta-llama/llama-3.1-70b-instruct", "llama-3.1-70b-instruct"),
-    ("openai/gpt-4o-mini", "gpt-4o-mini"),
-    ("openai/gpt-4o", "gpt-4o"),
-    ("deepseek/deepseek-r1", "deepseek-r1"),
+    "anthropic/claude-3.5-sonnet",
+    "anthropic/claude-3-5-haiku",
+    "anthropic/claude-3-haiku",
+    "google/gemini-pro-1.5",
+    "google/gemini-flash-1.5",
+    "google/gemini-flash-1.5-8b",
+    "meta-llama/llama-3.2-1b-instruct",
+    "meta-llama/llama-3.2-3b-instruct",
+    "meta-llama/llama-3.1-8b-instruct",
+    "meta-llama/llama-3.1-70b-instruct",
+    "openai/gpt-4o-mini",
+    "openai/gpt-4o",
+    "deepseek/deepseek-r1",
 ]
 
 
@@ -41,8 +41,6 @@ class Player:
                 "system_prompt": self.sys_prompt,
                 "prompt": f"You are the {self.team_color} team's spymaster. Think of a single word clue that allows your team mate guess as many {self.team_color} words as possible. Avoid potential connections with the other remaining words.",
             },
-            with_logs=False,
-            # on_queue_update=on_queue_update,
         )
         print(result)
 
@@ -58,8 +56,6 @@ class Player:
                 "system_prompt": self.sys_prompt,
                 "prompt": f"You are the {self.team_color} team's guesser. The received clue word is {clue_word}. Return your guesses in a json list, with words being in order of which you are most certain of, to least",
             },
-            with_logs=False,
-            # on_queue_update=on_queue_update,
         )
         print(result)
 
