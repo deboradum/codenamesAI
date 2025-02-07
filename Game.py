@@ -1,4 +1,7 @@
+import copy
 import random
+
+from pprint import pprint
 
 def get_random_words(wordlist_path="assets/words.txt", num_words=25):
     with open(wordlist_path, "r", encoding="utf-8") as file:
@@ -32,10 +35,11 @@ class CodeNamesGame:
             "neutral": shuffled_words[red_words + blue_words : 24],
             "assassin": [shuffled_words[24]],
         }
+        self.original_word_assignments = copy.deepcopy(self.word_assignments)
         self.turn_history = []
 
     def do_turn(self, team_color):
-        print()
+        pprint(self.word_assignments)
         if team_color == "blue":
             team = self.blue_team
             opponent_color = "red"
@@ -46,25 +50,30 @@ class CodeNamesGame:
         hint, num_cards = team["spymaster"].do_turn_spymaster(self.word_assignments)
         print(f"{team_color} Spymaster: {num_cards} hint: {hint}")
         guesses = team["guesser"].do_turn_guesser(hint, num_cards, self.left_over_words)
-        self.turn_history.append({"spymaster": (hint, num_cards), "guesser": guesses})
+        self.turn_history.append({"team": team_color, "spymaster": (hint, num_cards), "guesser": guesses})
 
         for guess in guesses:
             print(f"{team_color} guesser: {guess} ...", end=" ")
+            if guess not in self.left_over_words:
+                print(
+                    f"\n[WARNING] Guesser guessed a word which was not part of the allowed words! Guess: {guess}, allowed words: {str(self.left_over_words)}"
+                )
+                break
             self.left_over_words.remove(guess)
             if guess in self.word_assignments[team_color]:  # Correct guess
-                self.word_assignments[team_color].remove(guess)
                 print("correct!")
+                self.word_assignments[team_color].remove(guess)
             elif guess in self.word_assignments[opponent_color]:  # Incorrect guess, opponent's color
+                print(f"incorrect! {guess} belonged to {opponent_color}!")
                 self.word_assignments[opponent_color].remove(guess)
-                print("incorrect! {guess} belonged to {opponent_color}!")
                 break
             elif guess in self.word_assignments["neutral"]:  # Incorrect guess, neutral
+                print(f"incorrect! {guess} was neutral!")
                 self.word_assignments["neutral"].remove(guess)
-                print("incorrect! {guess} was neutral!")
                 break
             elif guess in self.word_assignments["assassin"]:  # Incorrect guess, assassin
+                print(f"incorrect! {guess} was the assassin!")
                 self.word_assignments["assassin"].remove(guess)
-                print("incorrect! {guess} was the assassin!")
                 break
             else:
                 print(f"[WARNING] Guesser guessed a word which was not part of the allowed words! Guess: {guess}, allowed words: {str(self.left_over_words)}")
@@ -81,7 +90,7 @@ class CodeNamesGame:
             return
 
         # Current team won
-        if len(self.word_assignments["team"]) == 0:
+        if len(self.word_assignments[team_color]) == 0:
             self.winner = team_color
             self.win_type = "correct_guess"
             return

@@ -1,3 +1,5 @@
+import re
+import json
 import fal_client
 
 ALLOWED_PLAYERS = [
@@ -13,7 +15,7 @@ ALLOWED_PLAYERS = [
     "meta-llama/llama-3.1-70b-instruct",
     "openai/gpt-4o-mini",
     "openai/gpt-4o",
-    "deepseek/deepseek-r1",
+    # "deepseek/deepseek-r1",
 ]
 
 
@@ -27,7 +29,7 @@ class Player:
             "spymaster",
             "guesser",
         }, "role must be either 'spymaster' or 'guesser'"
-        self.model
+        self.model = model
         self.team_color = team_color
         self.role = role
 
@@ -47,18 +49,38 @@ class Player:
                 arguments={
                     "model": self.model,
                     "system_prompt": self.sys_prompt,
-                    "prompt": f"You are the {self.team_color} team's spymaster. Think of a single word clue that allows your teammate to guess as many {self.team_color} words as possible. Avoid potential connections with the other remaining words. The possible words and their assignments are as follows: {str(word_assignments)}. Only respond with a single word and a number, separated by a space",
+                    "prompt": f"""You are the {self.team_color} team's spymaster. Think of a single word clue that allows your teammate to guess as many {self.team_color} words as possible. Avoid potential connections with the other remaining words. Avoid the assassin at all cost. Do not give hints which can easily be confused with the assassin.
+The possible words and their assignments are as follows: {str(word_assignments)}.
+
+Respond strictly in JSON format with the following structure:
+{{
+    "hint": "your_hint",
+    "num_cards": number
+}}
+
+Your hint must not be a word already in the word list. Always think of a new word. ONLY RESPOND WITH THE JSON OBJECT NOTHING ELSE""",
                 },
             )
             try:
-                hint, num_cards = result["output"].split(" ")
+                # gemini and gpt return a response like ```json{...}```, while llama and claude do not. This filters the response.
+                cleaned_output = re.sub(
+                    r"^```json|```$",
+                    "",
+                    result["output"].strip("```json").strip("```").strip(),
+                ).strip()
+                output = json.loads(cleaned_output)
+                hint = output["hint"]
+                num_cards = output["num_cards"]
                 correct_format = True
             except Exception as e:
                 print(
                     "[WARNING] spymaster did not return the correct format. Got error:",
                     e,
+                    "Got:",
+                    result["output"],
                 )
                 num_tries += 1
+                hint, num_cards = "", 0
 
         return hint, num_cards
 
@@ -71,17 +93,35 @@ class Player:
                 arguments={
                     "model": self.model,
                     "system_prompt": self.sys_prompt,
-                    "prompt": f"You are the {self.team_color} team's guesser. The received clue word is {clue_word}. You must guess {num_cards} words with this clue. Choose from any of the following words: {str(left_over_words)}. Only respond with a space seperated list of words, with words being in order of which you are most certain of, to least",
+                    "prompt": f"""You are the {self.team_color} team's guesser. The received clue word is "{clue_word}".
+You must guess {num_cards} words based on this clue. Choose from any of the following words: {str(left_over_words)}.
+
+Respond strictly in JSON format with the following structure:
+{{
+    "guesses": ["word1", "word2", "word3", ...]
+}}
+
+Make sure the words you guess are in the allowed words, never make up your own words and never guess the same word as the hint. Words must be in order from most certain to least certain. ONLY RESPOND WITH THE JSON OBJECT NOTHING ELSE""",
                 },
             )
             try:
-                guesses = result["output"].split(" ")
+                # gemini and gpt return a response like ```json{...}```, while llama and claude do not. This filters the response.
+                cleaned_output = re.sub(
+                    r"^```json|```$",
+                    "",
+                    result["output"].strip("```json").strip("```").strip(),
+                ).strip()
+                output = json.loads(cleaned_output)
+                guesses = output["guesses"]
                 correct_format = True
             except Exception as e:
                 print(
                     "[WARNING] guesser did not return the correct format. Got error:",
                     e,
+                    "Got:",
+                    result["output"],
                 )
                 num_tries += 1
+                guesses = []
 
         return guesses
