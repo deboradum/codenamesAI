@@ -15,7 +15,6 @@ ALLOWED_PLAYERS = [
     "meta-llama/llama-3.1-70b-instruct",
     "openai/gpt-4o-mini",
     "openai/gpt-4o",
-    # "deepseek/deepseek-r1",
 ]
 
 
